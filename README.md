@@ -380,6 +380,185 @@ func calculator(arguments <-chan int, done <-chan struct{}) <-chan int {
 }
 ```
 
+### Задание 11
+
+>Данная задача в основном ориентирована на изучение типа bufio.Reader, поскольку этот тип позволяет считывать данные постепенно.
+>
+>В тестовом файле, который вы можете скачать из нашего [репозитория](https://github.com/semyon-dev/stepik-go/tree/master/work_with_files/task_sep_1) на github.com, содержится длинный ряд чисел, разделенных символом ";". Требуется найти, на какой позиции находится число 0 и указать её в качестве ответа. Требуется вывести именно позицию числа, а не индекс (то-есть порядковый номер, нумерация с 1).
+>
+>Например:  12;234;6;0;78 :
+>Правильный ответ будет порядковый номер числа: 4
+
+``` go
+package main
+
+import (
+	"encoding/csv"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+)
+
+func readCsvFile(filePath string) []string {
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal("Unable to read input file "+filePath, err)
+	}
+	defer f.Close()
+
+	csvReader := csv.NewReader(f)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal("Unable to parse file as CSV for "+filePath, err)
+	}
+
+	arrayStrings := strings.Split(records[0][0], ";")
+
+	return arrayStrings
+}
+
+func searchNull(data []string) int {
+	for i, el := range data {
+		if el == "0"{
+			return i+1
+		}
+	}
+	return -1
+}
+
+
+func main() {
+	records := readCsvFile("F:\\загрузки\\text.txt")
+	fmt.Println(searchNull(records))
+}
+```
+
+
+### Задание 12
+
+>Данная задача ориентирована на реальную работу с данными в формате JSON. Для решения мы будем использовать справочник ОКВЭД (Общероссийский классификатор видов экономической деятельности), который был размещен на web-портале data.gov.ru.
+>
+>Необходимая вам информация о структуре данных содержится в файле structure-20190514T0000.json, а сами данные, которые вам потребуется декодировать, содержатся в файле data-20190514T0100.json. Файлы размещены в нашем [репозитории](https://github.com/semyon-dev/stepik-go/tree/master/work_with_json) на github.com.
+>
+>Для того, чтобы показать, что вы действительно смогли декодировать документ вам необходимо в качестве ответа записать сумму полей global_id всех элементов, закодированных в файле.
+
+
+``` go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+)
+
+type YouStruct struct {
+	Id int `json:"global_id"`
+}
+
+func readTextFile(filePath string) int {
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal("Unable to read input file "+filePath, err)
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	dst := []YouStruct{}
+	dec.Decode(&dst)
+
+	sum := 0
+	for _, el := range dst {
+		sum += el.Id
+	}
+
+	return sum
+}
+
+func main() {
+	fmt.Println(readTextFile("F:\\загрузки\\text.txt"))
+}
+```
+
+### Задание 13
+
+> На стандартный ввод подаются данные о студентах университетской группы в формате JSON:
+>
+> ``` json
+> {
+>   "ID":134,
+>   "Number":"ИЛМ-1274",
+>   "Year":2,
+>   "Students":[
+>       {
+>           "LastName":"Вещий",
+>           "FirstName":"Лифон",
+>           "MiddleName":"Вениаминович",
+>           "Birthday":"4апреля1970года",
+>           "Address":"632432,г.Тобольск,ул.Киевская,дом6,квартира23",
+>           "Phone":"+7(948)709-47-24",
+>           "Rating":[1,2,3]
+>       },
+>       {
+>           ...
+>       }
+>   ]
+>}
+>```
+>В сведениях о каждом студенте содержится информация о полученных им оценках (Rating). Требуется прочитать данные, и рассчитать среднее количество оценок, полученное студентами группы. Ответ на задачу требуется записать на стандартный вывод в формате JSON в следующей форме:
+>
+>``` json
+>{
+>   "Average": 14.1
+>}
+>```
+>Как вы понимаете, для декодирования используется функция Unmarshal, а для кодирования MarshalIndent (префикс - пустая строка, отступ - 4 пробела).
+
+``` go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+)
+
+type myStruct struct {
+	Students []struct {
+		Rating []float64 `json:"Rating"`
+	} `json:"Students"`
+}
+
+func main() {
+	sum := 0.0
+	num_students := 0.0
+	all_data := myStruct{}
+
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err == nil {
+		if err := json.Unmarshal([]byte(data), &all_data); err == nil {
+			num_students = float64(len(all_data.Students))
+			for _, el := range all_data.Students{
+				sum += float64(len(el.Rating))
+			}
+		}
+	}
+
+	res_data := map[string]float64 {"Average": sum / num_students}
+
+	answer, err := json.MarshalIndent(res_data, "", "    ")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("%s", answer)
+}
+```
+
 <!--
 ### Задание 7
 
